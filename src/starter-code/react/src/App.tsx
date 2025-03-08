@@ -1,4 +1,4 @@
-import { Code2, Sparkles } from "lucide-react";
+import { Code2, Sparkles } from 'lucide-react';
 
 function App() {
     return (
@@ -12,8 +12,7 @@ function App() {
                         Reacter <span className="text-indigo-600">AI</span>
                     </h1>
                     <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                        Your intelligent coding companion. Write better React
-                        code faster with AI-powered assistance.
+                        Your intelligent coding companion. Write better React code faster with AI-powered assistance.
                     </p>
                     <button className="bg-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
                         <Sparkles className="h-5 w-5" />

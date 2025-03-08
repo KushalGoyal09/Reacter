@@ -1,264 +1,310 @@
 'use client';
 
-import { useEffect, useRef, useState, Dispatch, SetStateAction } from 'react';
-import { WebContainer } from '@webcontainer/api';
+import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import Editor from '@monaco-editor/react';
 import { useWebContainer } from '@/hooks/useWebcontainer';
 import reactMountFiles from '@/constant/reactMountFiles';
 import initialFiles from '@/constant/initialFiles';
+import { ChatMessage, Files } from '@/types';
+import { executeCommand, installPackages, startDevServer } from '@/utils/webcontainer-utils';
 import '@xterm/xterm/css/xterm.css';
-
-interface ChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
-interface Files {
-    file_name: string;
-    content: string;
-}
+import { generateResponse } from './action';
+import { getFilePathAndName } from '@/utils/files-utils';
+import ChatBox from '@/components/ChatBox';
+import FileExplorer from '@/components/FileExplorer';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Code, Eye, X, Terminal as TerminalIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { startShell } from '@/utils/terminal-utils';
 
 export default function Home() {
     const { webcontainer, isLoading, error } = useWebContainer();
     const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+    const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState(error?.message || '');
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
-    const [files, setFiles] = useState<Files[]>([]);
+    const [chatLoading, setChatLoading] = useState(false);
+    const [files, setFiles] = useState<Files[]>(initialFiles);
     const [selectedFile, setSelectedFile] = useState<string>('');
     const [fileContent, setFileContent] = useState<string>('');
     const [src, setSrc] = useState('');
     const terminalRef = useRef<HTMLDivElement>(null);
     const [terminal, setTerminal] = useState<Terminal | null>(null);
     const [showTerminal, setShowTerminal] = useState(true);
+    const terminalInitialized = useRef(false);
 
-    // Terminal initialization
     useEffect(() => {
-        if (terminalRef.current) {
-            const terminal = new Terminal({
+        if (!terminalInitialized.current && terminalRef.current && webcontainer) {
+            console.log('terminal initialized');
+            const term = new Terminal({
                 convertEol: true,
             });
-            terminal.open(terminalRef.current);
-            setTerminal(terminal);
+            term.open(terminalRef.current);
+            setTerminal(term);
+            terminalInitialized.current = true;
+            startShell(term, webcontainer);
         }
-    }, []);
+    }, [webcontainer, terminalRef.current]);
 
-    // WebContainer setup
     useEffect(() => {
         const handleStart = async () => {
             if (webcontainer && terminal) {
-                await webcontainer.mount(reactMountFiles);
-                const installExit = await installPackages(webcontainer, terminal);
-                if (installExit !== 0) {
-                    console.log('install failed');
-                    return;
+                setLoading(true);
+                setLoadingMessage('Installing the base project...');
+                try {
+                    await webcontainer.mount(reactMountFiles);
+                    const installExit = await installPackages(webcontainer, terminal);
+                    if (installExit !== 0) {
+                        console.log('install failed');
+                        setErrorMessage('Failed to install the base project.');
+                        setLoading(false);
+                        setLoadingMessage('');
+                        return;
+                    }
+                    setLoading(false);
+                    setLoadingMessage('');
+                    await startDevServer(webcontainer, terminal, setSrc);
+                    setLoading(false);
+                    setLoadingMessage('');
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    setErrorMessage(
+                        `Error during initialization: ${error instanceof Error ? error.message : String(error)}`,
+                    );
+                    setLoading(false);
+                    setLoadingMessage('');
                 }
-
-                await startDevServer(webcontainer, terminal, setSrc);
-                console.log('webcontainer');
-                const file = await webcontainer.fs.readdir('/');
-                console.log('files');
-                console.log(file);
             }
         };
         handleStart();
     }, [webcontainer, terminal]);
 
-    // Initialize files from initialFiles
     useEffect(() => {
-        setFiles(initialFiles);
         if (initialFiles.length > 0) {
-            // Set the first file as selected by default
             setSelectedFile(initialFiles[0].file_name);
             setFileContent(initialFiles[0].content);
         }
     }, []);
 
-    // Handle file selection
     const handleFileSelect = (file: Files) => {
         setSelectedFile(file.file_name);
         setFileContent(file.content);
     };
 
-    // Update file content in both state and WebContainer
     const handleFileChange = async (value: string | undefined) => {
         if (!selectedFile || !value || !webcontainer) return;
 
         setFileContent(value);
 
-        // Update the file in WebContainer and local state
         try {
             await webcontainer.fs.writeFile(selectedFile, value);
-            setFiles(files.map((file) => (file.file_name === selectedFile ? { ...file, content: value } : file)));
+            setFiles((prev) => prev.map((f) => (f.file_name === selectedFile ? { ...f, content: value } : f)));
         } catch (error) {
             console.error('Error writing file:', error);
         }
     };
 
-    // Component for rendering flat file list
-    const FileList = ({ items }: { items: Files[] }) => (
-        <ul className="pl-4">
-            {items.map((file, index) => (
-                <li
-                    key={index}
-                    className={`cursor-pointer hover:bg-gray-100 p-1 ${
-                        selectedFile === file.file_name ? 'bg-blue-100' : ''
-                    }`}
-                    onClick={() => handleFileSelect(file)}
-                >
-                    {file.file_name}
-                </li>
-            ))}
-        </ul>
-    );
-
     const handleSendMessage = async () => {
-        // TODO: Implement AI response logic here
+        if (!webcontainer || !terminal) return;
+        setChatLoading(true);
+        setErrorMessage('');
+        const prompt = input;
+        setMessages([...messages, { role: 'user', content: prompt }]);
+        setInput('');
+
+        try {
+            const response = await generateResponse(prompt, files);
+            const chatResponse = {
+                role: 'assistant' as const,
+                content: response,
+            };
+            setMessages((prev) => [...prev, chatResponse]);
+            setChatLoading(false);
+            setLoading(true);
+            setLoadingMessage('Loading...');
+
+            for (const step of response.steps) {
+                if (step.command) {
+                    if (step.command !== 'npm run dev') {
+                        try {
+                            setLoadingMessage(`Running ${step.command}`);
+                            await executeCommand(webcontainer, terminal, step.command);
+                        } catch (error) {
+                            console.error(`Error running ${step.command}:`, error);
+                            setErrorMessage(
+                                `Failed to run "${step.command}": ${
+                                    error instanceof Error ? error.message : String(error)
+                                }`,
+                            );
+                            break;
+                        }
+                    }
+                }
+                if (step.file_name && step.content) {
+                    try {
+                        const [folderPath, fileName] = getFilePathAndName(step.file_name);
+                        setLoadingMessage(`Updating or Creating ${step.file_name}`);
+                        await webcontainer.fs.mkdir(folderPath, { recursive: true });
+                        await webcontainer.fs.writeFile(step.file_name, step.content);
+                        const fileExists = files.some((f) => f.file_name === step.file_name);
+                        if (fileExists) {
+                            setFiles((prev) =>
+                                prev.map((f) =>
+                                    f.file_name === step.file_name ? { ...f, content: step.content! } : f,
+                                ),
+                            );
+                        } else {
+                            setFiles((prev) => [
+                                ...prev,
+                                {
+                                    file_name: step.file_name!,
+                                    content: step.content!,
+                                },
+                            ]);
+                        }
+                        if (selectedFile === step.file_name) {
+                            setFileContent(step.content);
+                        }
+                    } catch (error) {
+                        console.error(`Error creating file ${step.file_name}:`, error);
+                        setErrorMessage(`Error creating file ${step.file_name}: ${error}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error generating response:', error);
+            setErrorMessage(
+                `Failed to generate AI response: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            setChatLoading(false);
+        } finally {
+            setLoading(false);
+            setLoadingMessage('');
+        }
     };
 
     return (
-        <div className="flex h-screen">
-            {/* Chat Interface - Left Side */}
-            <div className="w-1/3 flex flex-col border-r">
-                <div className="flex-1 overflow-auto p-4">
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`mb-4 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                            <div
-                                className={`inline-block p-2 rounded-lg ${
-                                    msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-                                }`}
-                            >
-                                {msg.content}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="p-4 border-t">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            className="flex-1 p-2 border rounded"
-                            placeholder="Type your message..."
-                        />
-                        <button onClick={handleSendMessage} className="px-4 py-2 bg-blue-500 text-white rounded">
-                            Send
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <div className="flex h-screen bg-background text-foreground">
+            <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel defaultSize={30} minSize={20}>
+                    <ChatBox
+                        messages={messages}
+                        handleSendMessage={handleSendMessage}
+                        input={input}
+                        setInput={setInput}
+                        chatLoading={chatLoading}
+                        loading={loading}
+                        loadingMessage={loadingMessage}
+                        errorMessage={errorMessage}
+                    />
+                </ResizablePanel>
 
-            {/* Code and Preview - Right Side */}
-            <div className="flex-1">
-                <div className="flex border-b">
-                    <button
-                        className={`px-4 py-2 ${activeTab === 'code' ? 'bg-gray-200' : ''}`}
-                        onClick={() => setActiveTab('code')}
+                <ResizableHandle withHandle />
+
+                <ResizablePanel defaultSize={70}>
+                    <Tabs
+                        defaultValue="code"
+                        className="w-full h-full flex flex-col"
+                        onValueChange={(value: any) => setActiveTab(value as 'code' | 'preview')}
                     >
-                        Code
-                    </button>
-                    <button
-                        className={`px-4 py-2 ${activeTab === 'preview' ? 'bg-gray-200' : ''}`}
-                        onClick={() => setActiveTab('preview')}
-                    >
-                        Preview
-                    </button>
-                </div>
+                        <TabsList className="border-b rounded-none justify-start">
+                            <TabsTrigger value="code" className="flex items-center gap-2">
+                                <Code size={16} />
+                                Code
+                            </TabsTrigger>
+                            <TabsTrigger value="preview" className="flex items-center gap-2">
+                                <Eye size={16} />
+                                Preview
+                            </TabsTrigger>
+                        </TabsList>
 
-                <div className="h-[calc(100vh-40px)]">
-                    {activeTab === 'code' ? (
-                        <div className="flex h-full">
-                            {/* File Explorer */}
-                            <div className="w-64 border-r overflow-auto p-2">
-                                <FileList items={files} />
-                            </div>
-                            {/* Monaco Editor */}
-                            <div className="flex-1">
-                                <Editor
-                                    height="100%"
-                                    path={selectedFile}
-                                    defaultLanguage="typescript"
-                                    value={fileContent}
-                                    theme="vs-dark"
-                                    onChange={handleFileChange}
-                                    options={{
-                                        minimap: { enabled: false },
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="h-full">
-                            <iframe src={src} className="w-full h-full" />
-                        </div>
-                    )}
-                </div>
-            </div>
+                        <TabsContent value="code" className="flex-1 flex flex-col">
+                            <ResizablePanelGroup direction="vertical" className="h-full">
+                                <ResizablePanel defaultSize={showTerminal ? 70 : 100}>
+                                    <ResizablePanelGroup direction="horizontal">
+                                        <ResizablePanel defaultSize={20} minSize={15}>
+                                            <div className="h-full overflow-auto p-2">
+                                                <FileExplorer
+                                                    items={files}
+                                                    selectedFile={selectedFile}
+                                                    handleFileSelect={handleFileSelect}
+                                                />
+                                            </div>
+                                        </ResizablePanel>
 
-            {/* Terminal with Toggle */}
-            {activeTab === 'code' && (
-                <>
-                    {showTerminal ? (
-                        <div className="h-32 border-t relative">
-                            <button
-                                onClick={() => setShowTerminal(false)}
-                                className="absolute right-2 top-1 text-gray-500 hover:text-gray-700"
-                            >
-                                ×
-                            </button>
-                            <div ref={terminalRef} className="h-full" />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setShowTerminal(true)}
-                            className="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg hover:bg-gray-700"
-                        >
-                            Show Terminal
-                        </button>
-                    )}
-                </>
-            )}
+                                        <ResizableHandle withHandle />
 
-            {/* Error and Loading States */}
-            {error && <div className="absolute top-0 right-0 p-4 bg-red-500 text-white">{error.message}</div>}
+                                        <ResizablePanel defaultSize={80}>
+                                            <Editor
+                                                height="100%"
+                                                path={selectedFile}
+                                                value={fileContent}
+                                                theme="vs-dark"
+                                                onChange={handleFileChange}
+                                                options={{
+                                                    minimap: { enabled: false },
+                                                    fontSize: 18,
+                                                }}
+                                            />
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
+                                </ResizablePanel>
+
+                                {showTerminal && (
+                                    <>
+                                        <ResizableHandle withHandle />
+
+                                        <ResizablePanel defaultSize={30} minSize={10}>
+                                            <div className="h-full relative bg-black">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => setShowTerminal(false)}
+                                                    className="absolute right-2 top-2 z-10 bg-white"
+                                                >
+                                                    <X size={16} />
+                                                </Button>
+                                                <div ref={terminalRef} className="h-full w-full" />
+                                            </div>
+                                        </ResizablePanel>
+                                    </>
+                                )}
+                            </ResizablePanelGroup>
+
+                            {!showTerminal && (
+                                <Button
+                                    onClick={() => setShowTerminal(true)}
+                                    className="fixed bottom-4 right-4"
+                                    variant="default"
+                                >
+                                    <TerminalIcon size={16} className="mr-2" />
+                                    Show Terminal
+                                </Button>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="preview" className="flex-1">
+                            {src ? (
+                                <iframe src={src} className="w-full h-full" />
+                            ) : (
+                                <div className="h-full flex items-center justify-center">
+                                    <div className="text-muted-foreground">No preview available</div>
+                                </div>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </ResizablePanel>
+            </ResizablePanelGroup>
+
             {isLoading && (
-                <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
                     <div className="text-xl">Loading...</div>
                 </div>
             )}
         </div>
     );
 }
-
-const installPackages = async (webcontainer: WebContainer, terminal: Terminal) => {
-    const installProcess = await webcontainer.spawn('npm', ['install']);
-    installProcess.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        }),
-    );
-    return installProcess.exit;
-};
-
-const startDevServer = async (
-    webcontainer: WebContainer,
-    terminal: Terminal,
-    setSrc: Dispatch<SetStateAction<string>>,
-) => {
-    const serverProcess = await webcontainer.spawn('npm', ['run', 'dev']);
-    serverProcess.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        }),
-    );
-
-    webcontainer.on('server-ready', (port, url) => {
-        setSrc(url);
-    });
-    return serverProcess.exit;
-};

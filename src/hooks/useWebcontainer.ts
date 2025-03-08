@@ -18,8 +18,9 @@ export function useWebContainer() {
                 setIsLoading(false);
             }
         }
-
-        mountWebContainer();
+        if (!webcontainer) {
+            mountWebContainer();
+        }
 
         return () => {
             if (webcontainer) {

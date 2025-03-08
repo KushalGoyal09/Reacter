@@ -1,12 +1,9 @@
-export interface Files {
-    file_name: string;
-    content: string;
-  }
-  
-  const initialFiles: Files[] = [
+import { Files } from '@/types';
+
+const initialFiles: Files[] = [
     {
-      file_name: "vite.config.ts",
-      content: `import { defineConfig } from 'vite'
+        file_name: 'vite.config.ts',
+        content: `import { defineConfig } from 'vite'
   import react from '@vitejs/plugin-react'
   import path from "path"
   
@@ -22,8 +19,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "tsconfig.node.json",
-      content: `{
+        file_name: 'tsconfig.node.json',
+        content: `{
     "compilerOptions": {
       "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
       "target": "ES2022",
@@ -50,8 +47,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "tsconfig.json",
-      content: `{
+        file_name: 'tsconfig.json',
+        content: `{
     "files": [],
     "references": [
       { "path": "./tsconfig.app.json" },
@@ -67,8 +64,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "tsconfig.app.json",
-      content: `{
+        file_name: 'tsconfig.app.json',
+        content: `{
     "compilerOptions": {
       "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
       "target": "ES2020",
@@ -103,8 +100,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "tailwind.config.js",
-      content: `/** @type {import('tailwindcss').Config} */
+        file_name: 'tailwind.config.js',
+        content: `/** @type {import('tailwindcss').Config} */
   module.exports = {
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
@@ -123,8 +120,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "postcss.config.js",
-      content: `export default {
+        file_name: 'postcss.config.js',
+        content: `export default {
     plugins: {
       tailwindcss: {},
       autoprefixer: {},
@@ -133,8 +130,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "package.json",
-      content: `{
+        file_name: 'package.json',
+        content: `{
     "name": "react-starter",
     "private": true,
     "version": "0.0.0",
@@ -176,8 +173,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "index.html",
-      content: `<!doctype html>
+        file_name: 'index.html',
+        content: `<!doctype html>
   <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -193,8 +190,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "eslintrc.config.js",
-      content: `import js from '@eslint/js'
+        file_name: 'eslintrc.config.js',
+        content: `import js from '@eslint/js'
   import globals from 'globals'
   import reactHooks from 'eslint-plugin-react-hooks'
   import reactRefresh from 'eslint-plugin-react-refresh'
@@ -225,8 +222,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "components.json",
-      content: `{
+        file_name: 'components.json',
+        content: `{
     "$schema": "https://ui.shadcn.com/schema.json",
     "style": "new-york",
     "rsc": false,
@@ -250,8 +247,8 @@ export interface Files {
   `,
     },
     {
-      file_name: "src/main.tsx",
-      content: `import { StrictMode } from 'react'
+        file_name: 'src/main.tsx',
+        content: `import { StrictMode } from 'react'
   import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
@@ -262,10 +259,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 `,
-  },
-  {
-    file_name: "src/App.tsx",
-    content: `import { Code2, Sparkles } from "lucide-react";
+    },
+    {
+        file_name: 'src/App.tsx',
+        content: `import { Code2, Sparkles } from "lucide-react";
 
 function App() {
   return (
@@ -294,10 +291,10 @@ function App() {
 
 export default App;
 `,
-  },
-  {
-    file_name: "src/index.css",
-    content: `@tailwind base;
+    },
+    {
+        file_name: 'src/index.css',
+        content: `@tailwind base;
 @tailwind components;
 @tailwind utilities;
 @layer base {
@@ -306,22 +303,22 @@ export default App;
   }
 }
 `,
-  },
-  {
-    file_name: "src/vite-env.d.ts",
-    content: `/// <reference types="vite/client" />
+    },
+    {
+        file_name: 'src/vite-env.d.ts',
+        content: `/// <reference types="vite/client" />
 `,
-  },
-  {
-    file_name: "src/lib/utils.ts",
-    content: `import { clsx, type ClassValue } from "clsx"
+    },
+    {
+        file_name: 'src/lib/utils.ts',
+        content: `import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
 return twMerge(clsx(inputs))
 }
 `,
-  },
+    },
 ];
 
 export default initialFiles;
