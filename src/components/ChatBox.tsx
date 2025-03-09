@@ -1,8 +1,8 @@
 import { ChatMessage } from '@/types';
 import MessageBox from './MessageBox';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { SendIcon } from 'lucide-react';
+import Input from 'react-textarea-autosize';
 
 export default function ChatBox({
     messages,
@@ -44,11 +44,18 @@ export default function ChatBox({
                     className="flex gap-2"
                 >
                     <Input
-                        type="text"
-                        value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        className="flex-1"
-                        placeholder="Type your message..."
+                        placeholder="Type your imagination..."
+                        className="flex-1 rounded-lg px-4 py-2 text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        value={input}
+                        minRows={1}
+                        maxRows={6}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                            }
+                        }}
                     />
                     <Button type="submit" disabled={chatLoading}>
                         <SendIcon size={16} className={chatLoading ? 'mr-2 animate-spin' : 'mr-2'} />

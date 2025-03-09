@@ -10,7 +10,7 @@ export function useWebContainer() {
         async function mountWebContainer() {
             try {
                 setIsLoading(true);
-                const instance = await WebContainer.boot();
+                const instance = await WebContainer.boot({ workdirName: 'project' });
                 setWebcontainer(instance);
             } catch (err) {
                 setError(err instanceof Error ? err : new Error('Failed to mount WebContainer'));

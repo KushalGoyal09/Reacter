@@ -205,10 +205,7 @@ export default function Home() {
                 <ResizableHandle withHandle />
 
                 <ResizablePanel defaultSize={70}>
-                    <Tabs
-                        defaultValue="code"
-                        className="w-full h-full flex flex-col"
-                    >
+                    <Tabs defaultValue="code" className="w-full h-full flex flex-col">
                         <TabsList className="border-b rounded-none justify-start">
                             <TabsTrigger value="code" className="flex items-center gap-2">
                                 <Code size={16} />
