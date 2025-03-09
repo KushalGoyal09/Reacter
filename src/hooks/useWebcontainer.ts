@@ -27,7 +27,7 @@ export function useWebContainer() {
                 webcontainer.teardown();
             }
         };
-    }, []);
+    }, [webcontainer]);
 
     return {
         webcontainer,

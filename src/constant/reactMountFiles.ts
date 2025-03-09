@@ -1,4 +1,5 @@
-import reactInitialFiles, { Files } from './initialFiles';
+import reactInitialFiles from './initialFiles';
+import { Files } from '@/types';
 import { FileSystemTree, DirectoryNode } from '@webcontainer/api';
 
 const getMountFiles = (initialFiles: Files[]): FileSystemTree => {

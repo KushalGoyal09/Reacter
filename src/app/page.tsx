@@ -21,7 +21,6 @@ import { startShell } from '@/utils/terminal-utils';
 
 export default function Home() {
     const { webcontainer, isLoading, error } = useWebContainer();
-    const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState(error?.message || '');
@@ -48,7 +47,7 @@ export default function Home() {
             terminalInitialized.current = true;
             startShell(term, webcontainer);
         }
-    }, [webcontainer, terminalRef.current]);
+    }, [webcontainer, terminalRef]);
 
     useEffect(() => {
         const handleStart = async () => {
@@ -146,7 +145,7 @@ export default function Home() {
                 }
                 if (step.file_name && step.content) {
                     try {
-                        const [folderPath, fileName] = getFilePathAndName(step.file_name);
+                        const [folderPath] = getFilePathAndName(step.file_name);
                         setLoadingMessage(`Updating or Creating ${step.file_name}`);
                         await webcontainer.fs.mkdir(folderPath, { recursive: true });
                         await webcontainer.fs.writeFile(step.file_name, step.content);
@@ -209,7 +208,6 @@ export default function Home() {
                     <Tabs
                         defaultValue="code"
                         className="w-full h-full flex flex-col"
-                        onValueChange={(value: any) => setActiveTab(value as 'code' | 'preview')}
                     >
                         <TabsList className="border-b rounded-none justify-start">
                             <TabsTrigger value="code" className="flex items-center gap-2">
