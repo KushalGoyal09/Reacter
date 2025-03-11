@@ -19,13 +19,17 @@ const generateResponseSchema = z.object({
 });
 
 export async function generateResponse(prompt: string, currentFiles: Files[]) {
-    const response = await taltToGemini(prompt, currentFiles);
     try {
-        const parsedResponse = generateResponseSchema.parse(JSON.parse(response));
-        return parsedResponse;
+        const response = await taltToGemini(prompt, currentFiles);
+        const jsonResponse = JSON.parse(response);
+        const parsedResponse = generateResponseSchema.safeParse(jsonResponse);
+        if (!parsedResponse.success) {
+            console.error('Error parsing response:', parsedResponse.error);
+            throw new Error('Invalid response format');
+        }
+        return parsedResponse.data;
     } catch (error) {
-        console.log(response);
-        console.error('Error parsing response:', error);
-        throw new Error('Invalid response format');
+        console.log(error);
+        throw new Error('Error generating response');
     }
 }

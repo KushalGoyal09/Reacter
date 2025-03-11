@@ -34,51 +34,52 @@ export default function Home() {
     const terminalRef = useRef<HTMLDivElement>(null);
     const [terminal, setTerminal] = useState<Terminal | null>(null);
     const [showTerminal, setShowTerminal] = useState(true);
-    const terminalInitialized = useRef(false);
+    const [devServerStarted, setDevServerStarted] = useState(false);
 
     useEffect(() => {
-        if (!terminalInitialized.current && terminalRef.current && webcontainer) {
-            console.log('terminal initialized');
+        if (showTerminal && !terminal && terminalRef.current && webcontainer) {
             const term = new Terminal({
                 convertEol: true,
             });
             term.open(terminalRef.current);
             setTerminal(term);
-            terminalInitialized.current = true;
             startShell(term, webcontainer);
         }
-    }, [webcontainer, terminalRef]);
+    }, [showTerminal, terminal, webcontainer, terminalRef]);
 
     useEffect(() => {
         const handleStart = async () => {
-            if (webcontainer && terminal) {
-                setLoading(true);
-                setLoadingMessage('Installing the base project...');
-                try {
-                    await webcontainer.mount(reactMountFiles);
-                    const installExit = await installPackages(webcontainer, terminal);
-                    if (installExit !== 0) {
-                        console.log('install failed');
-                        setErrorMessage('Failed to install the base project.');
-                        setLoading(false);
-                        setLoadingMessage('');
-                        return;
-                    }
+            if (!webcontainer || !terminal || devServerStarted) return;
+
+            setLoading(true);
+            setLoadingMessage('Installing the base project...');
+
+            try {
+                await webcontainer.mount(reactMountFiles);
+                const installExit = await installPackages(webcontainer, terminal);
+
+                if (installExit !== 0) {
+                    console.log('install failed');
+                    setErrorMessage('Failed to install the base project.');
                     setLoading(false);
                     setLoadingMessage('');
-                    await startDevServer(webcontainer, terminal, setSrc);
-                    setLoading(false);
-                    setLoadingMessage('');
-                } catch (error) {
-                    console.error('Initialization error:', error);
-                    setErrorMessage(
-                        `Error during initialization: ${error instanceof Error ? error.message : String(error)}`,
-                    );
-                    setLoading(false);
-                    setLoadingMessage('');
+                    return;
                 }
+
+                setLoading(false);
+                setLoadingMessage('');
+                setDevServerStarted(true);
+                await startDevServer(webcontainer, terminal, setSrc);
+            } catch (error) {
+                console.error('Initialization error:', error);
+                setErrorMessage(
+                    `Error during initialization: ${error instanceof Error ? error.message : String(error)}`,
+                );
+                setLoading(false);
+                setLoadingMessage('');
             }
         };
+
         handleStart();
     }, [webcontainer, terminal]);
 
@@ -186,6 +187,15 @@ export default function Home() {
         }
     };
 
+    // When closing the terminal, dispose of it and reset state.
+    const handleCloseTerminal = () => {
+        if (terminal) {
+            terminal.dispose();
+            setTerminal(null);
+        }
+        setShowTerminal(false);
+    };
+
     return (
         <div className="flex h-screen bg-background text-foreground">
             <ResizablePanelGroup direction="horizontal">
@@ -207,11 +217,19 @@ export default function Home() {
                 <ResizablePanel defaultSize={70}>
                     <Tabs defaultValue="code" className="w-full h-full flex flex-col">
                         <TabsList className="border-b rounded-none justify-start">
-                            <TabsTrigger value="code" className="flex items-center gap-2">
+                            <TabsTrigger
+                                value="code"
+                                className="flex items-center gap-2"
+                                onClick={() => setShowTerminal(true)}
+                            >
                                 <Code size={16} />
                                 Code
                             </TabsTrigger>
-                            <TabsTrigger value="preview" className="flex items-center gap-2">
+                            <TabsTrigger
+                                value="preview"
+                                className="flex items-center gap-2"
+                                onClick={handleCloseTerminal}
+                            >
                                 <Eye size={16} />
                                 Preview
                             </TabsTrigger>
@@ -258,7 +276,7 @@ export default function Home() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => setShowTerminal(false)}
+                                                    onClick={handleCloseTerminal}
                                                     className="absolute right-2 top-2 z-10 bg-white"
                                                 >
                                                     <X size={16} />
