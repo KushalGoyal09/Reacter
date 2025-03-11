@@ -109,7 +109,7 @@ export default function Home() {
     };
 
     const handleSendMessage = async () => {
-        if (!webcontainer || !terminal) return;
+        if (!webcontainer) return;
         setChatLoading(true);
         setErrorMessage('');
         const prompt = input;

@@ -34,18 +34,20 @@ export const startDevServer = async (
     return serverProcess.exit;
 };
 
-export const executeCommand = async (webcontainer: WebContainer, terminal: Terminal, command: string) => {
+export const executeCommand = async (webcontainer: WebContainer, terminal: Terminal | null, command: string) => {
     console.log('Executing command:', command);
     const commands = command.split(' ');
     const mainCommand = commands[0];
     const args = commands.slice(1);
     const commandProcess = await webcontainer.spawn(mainCommand, args);
-    commandProcess.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        }),
-    );
+    if (terminal) {
+        commandProcess.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            }),
+        );
+    } 
     return commandProcess.exit;
 };
