@@ -3,6 +3,8 @@ import MessageBox from './MessageBox';
 import { Button } from '@/components/ui/button';
 import { SendIcon } from 'lucide-react';
 import Input from 'react-textarea-autosize';
+import { Code2 } from 'lucide-react';
+
 
 export default function ChatBox({
     messages,
@@ -25,8 +27,9 @@ export default function ChatBox({
 }) {
     return (
         <div className="flex flex-col h-full border-r border-border">
-            <div className="p-4 border-b border-border">
-                <h2 className="font-semibold">Chat</h2>
+            <div className="p-4 border-b border-border flex items-center gap-2">
+                <Code2 size={24} className='text-indigo-600' />
+                <h2 className="font-semibold">Reacter</h2>
             </div>
             <MessageBox
                 messages={messages}
