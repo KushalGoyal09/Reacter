@@ -7,20 +7,21 @@ import { useWebContainer } from '@/hooks/useWebcontainer';
 import reactMountFiles from '@/constant/reactMountFiles';
 import initialFiles from '@/constant/initialFiles';
 import { ChatMessage, Files } from '@/types';
-import { executeCommand, installPackages, startDevServer } from '@/utils/webcontainer-utils';
+import { executeCommand, installPackages, startDevServer, stopDevServer } from '@/utils/webcontainer-utils';
 import '@xterm/xterm/css/xterm.css';
 import { generateResponse } from './action';
 import { getFilePathAndName } from '@/utils/files-utils';
 import ChatBox from '@/components/ChatBox';
 import FileExplorer from '@/components/FileExplorer';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Code, Eye, X, Terminal as TerminalIcon } from 'lucide-react';
+import { Code, Eye, X, Terminal as TerminalIcon, RefreshCw, RefreshCwOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { startShell } from '@/utils/terminal-utils';
+import { WebContainerProcess } from '@webcontainer/api';
 
 export default function Home() {
-    const { webcontainer, isLoading, error } = useWebContainer();
+    const { webcontainer, error } = useWebContainer();
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState(error?.message || '');
@@ -35,6 +36,10 @@ export default function Home() {
     const [terminal, setTerminal] = useState<Terminal | null>(null);
     const [showTerminal, setShowTerminal] = useState(true);
     const [devServerStarted, setDevServerStarted] = useState(false);
+    const [devServerProcess, setDevserverProcess] = useState<WebContainerProcess | null>(null);
+    const [route,setRoute] = useState('/');
+    const ifameRef = useRef<HTMLIFrameElement>(null);
+    
 
     useEffect(() => {
         if (showTerminal && !terminal && terminalRef.current && webcontainer) {
@@ -49,7 +54,7 @@ export default function Home() {
 
     useEffect(() => {
         const handleStart = async () => {
-            if (!webcontainer || !terminal || devServerStarted) return;
+            if (!webcontainer || devServerStarted) return;
 
             setLoading(true);
             setLoadingMessage('Installing the base project...');
@@ -69,7 +74,7 @@ export default function Home() {
                 setLoading(false);
                 setLoadingMessage('');
                 setDevServerStarted(true);
-                await startDevServer(webcontainer, terminal, setSrc);
+                await startDevServer(webcontainer, terminal, setSrc, setDevserverProcess);
             } catch (error) {
                 console.error('Initialization error:', error);
                 setErrorMessage(
@@ -81,7 +86,7 @@ export default function Home() {
         };
 
         handleStart();
-    }, [webcontainer, terminal]);
+    }, [webcontainer]);
 
     useEffect(() => {
         if (initialFiles.length > 0) {
@@ -126,7 +131,9 @@ export default function Home() {
             setChatLoading(false);
             setLoading(true);
             setLoadingMessage('Loading...');
-
+            if (devServerProcess) {
+                stopDevServer(devServerProcess, setSrc);
+            }
             for (const step of response.steps) {
                 if (step.command) {
                     if (step.command !== 'npm run dev') {
@@ -175,6 +182,7 @@ export default function Home() {
                     }
                 }
             }
+            startDevServer(webcontainer, terminal, setSrc, setDevserverProcess);
         } catch (error) {
             console.error('Error generating response:', error);
             setErrorMessage(
@@ -194,6 +202,13 @@ export default function Home() {
             setTerminal(null);
         }
         setShowTerminal(false);
+    };
+
+    const reloadPreview = () => {
+        ifameRef;
+        if (ifameRef.current) {
+            ifameRef.current.src = ifameRef.current.src;
+        }
     };
 
     return (
@@ -300,9 +315,33 @@ export default function Home() {
                             )}
                         </TabsContent>
 
-                        <TabsContent value="preview" className="flex-1">
+                        <TabsContent value="preview" className="flex-1 relative flex flex-col">
+                            <div className="border-b p-2 flex items-center gap-2">
+                                <Button
+                                    onClick={reloadPreview}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                    disabled={!src}
+                                >
+                                    {src ? (
+                                        <RefreshCw size={16} />
+                                    ) : (
+                                        <RefreshCwOff size={16} className="text-muted-foreground" />
+                                    )}
+                                    Reload
+                                </Button>
+                                <input
+                                    type="text"
+                                    value={route}
+                                    onChange={(e) => setRoute(e.target.value)}
+                                    placeholder="Enter URL"
+                                    className="flex-1 px-3 py-1 border rounded-md bg-background"
+                                    disabled={!src}
+                                />
+                            </div>
                             {src ? (
-                                <iframe src={src} className="w-full h-full" />
+                                <iframe ref={ifameRef} src={src+route} className="w-full flex-1" />
                             ) : (
                                 <div className="h-full flex items-center justify-center">
                                     <div className="text-muted-foreground">No preview available</div>
@@ -312,12 +351,6 @@ export default function Home() {
                     </Tabs>
                 </ResizablePanel>
             </ResizablePanelGroup>
-
-            {isLoading && (
-                <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                    <div className="text-xl">Loading...</div>
-                </div>
-            )}
         </div>
     );
 }

@@ -1,45 +1,57 @@
 import { SetStateAction } from 'react';
 import { Terminal } from '@xterm/xterm';
-import { WebContainer } from '@webcontainer/api';
+import { WebContainer, WebContainerProcess } from '@webcontainer/api';
 import { Dispatch } from 'react';
 
-export const installPackages = async (webcontainer: WebContainer, terminal: Terminal) => {
-    const installProcess = await webcontainer.spawn('npm', ['install']);
-    installProcess.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        }),
-    );
+export const installPackages = async (webcontainer: WebContainer, terminal: Terminal | null) => {
+    const installProcess = await webcontainer.spawn('jsh', ['-c', 'npm install --force']);
+    if (terminal) {
+        installProcess.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            }),
+        );
+    }
     return installProcess.exit;
 };
 
 export const startDevServer = async (
     webcontainer: WebContainer,
-    terminal: Terminal,
+    terminal: Terminal | null,
     setSrc: Dispatch<SetStateAction<string>>,
+    setDevserverProcess: Dispatch<SetStateAction<WebContainerProcess | null>>,
 ) => {
-    const serverProcess = await webcontainer.spawn('npm', ['run', 'dev']);
-    serverProcess.output.pipeTo(
-        new WritableStream({
-            write(data) {
-                terminal.write(data);
-            },
-        }),
-    );
+    const serverProcess = await webcontainer.spawn('jsh', ['-c', 'npm run dev']);
+    setDevserverProcess(serverProcess);
+    if (terminal) {
+        serverProcess.output.pipeTo(
+            new WritableStream({
+                write(data) {
+                    terminal.write(data);
+                },
+            }),
+        );
+    }
+
     webcontainer.on('server-ready', (port, url) => {
+        console.log(url);
         setSrc(url);
     });
     return serverProcess.exit;
 };
 
+export const stopDevServer = async (serverProcess: WebContainerProcess, setSrc: Dispatch<SetStateAction<string>>) => {
+    serverProcess.kill();
+    setSrc('');
+};
+
 export const executeCommand = async (webcontainer: WebContainer, terminal: Terminal | null, command: string) => {
-    console.log('Executing command:', command);
-    const commands = command.split(' ');
-    const mainCommand = commands[0];
-    const args = commands.slice(1);
-    const commandProcess = await webcontainer.spawn(mainCommand, args);
+    if (command === 'npm install') {
+        return installPackages(webcontainer, terminal);
+    }
+    const commandProcess = await webcontainer.spawn('jsh', ['-c', command]);
     if (terminal) {
         commandProcess.output.pipeTo(
             new WritableStream({
@@ -48,6 +60,6 @@ export const executeCommand = async (webcontainer: WebContainer, terminal: Termi
                 },
             }),
         );
-    } 
+    }
     return commandProcess.exit;
 };
