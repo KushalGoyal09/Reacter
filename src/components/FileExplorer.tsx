@@ -166,7 +166,7 @@ const FileExplorer = ({
                                 }
                                 return a.name.localeCompare(b.name);
                             })
-                            .map((child, index) => (
+                            .map((child) => (
                                 <FileTreeItem key={child.path} node={child} depth={depth + 1} />
                             ))}
                     </ul>
@@ -188,7 +188,7 @@ const FileExplorer = ({
                         }
                         return a.name.localeCompare(b.name);
                     })
-                    .map((node, index) => (
+                    .map((node) => (
                         <FileTreeItem key={node.path} node={node} />
                     ))}
             </ul>

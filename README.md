@@ -8,29 +8,29 @@ Reacter AI is a sophisticated web-based development environment that helps you w
 
 ## Features
 
--   **AI-Powered Code Generation**: Get complete React components based on your prompts
--   **Real-Time Preview**: See your changes instantly with an integrated preview window
--   **Interactive Development Environment**:
-    -   Monaco Editor with TypeScript support
-    -   Integrated terminal
-    -   File explorer
-    -   Live preview
--   **Modern Tech Stack**: Built with React, TypeScript, and Tailwind CSS
--   **WebContainer Integration**: Run Node.js directly in the browser
--   **Beautiful UI**: Modern, responsive interface using shadcn/ui components
+- **AI-Powered Code Generation**: Get complete React components based on your prompts
+- **Real-Time Preview**: See your changes instantly with an integrated preview window
+- **Interactive Development Environment**:
+    - Monaco Editor with TypeScript support
+    - Integrated terminal
+    - File explorer
+    - Live preview
+- **Modern Tech Stack**: Built with React, TypeScript, and Tailwind CSS
+- **WebContainer Integration**: Run Node.js directly in the browser
+- **Beautiful UI**: Modern, responsive interface using shadcn/ui components
 
 ## Technology Stack
 
--   **Frontend Framework**: NextJs
--   **Styling**:
-    -   Tailwind CSS
-    -   shadcn/ui components
-    -   Lucide React icons
--   **Development Environment**:
-    -   WebContainer API
-    -   Monaco Editor
-    -   xterm.js for terminal emulation
--   **AI Integration**: Google's Gemini AI API
+- **Frontend Framework**: NextJs
+- **Styling**:
+    - Tailwind CSS
+    - shadcn/ui components
+    - Lucide React icons
+- **Development Environment**:
+    - WebContainer API
+    - Monaco Editor
+    - xterm.js for terminal emulation
+- **AI Integration**: Google's Gemini AI API
 
 ## Key Features in Detail
 
@@ -40,16 +40,16 @@ The AI assistant helps you generate React components and features through natura
 
 ### Development Environment
 
--   Full-featured code editor with TypeScript support
--   Integrated terminal for running commands
--   File explorer for managing project files
--   Live preview window showing real-time changes
+- Full-featured code editor with TypeScript support
+- Integrated terminal for running commands
+- File explorer for managing project files
+- Live preview window showing real-time changes
 
 ### Modern UI
 
--   Responsive layout with resizable panels
--   Clean and professional design using shadcn/ui components
--   Smooth animations and transitions
+- Responsive layout with resizable panels
+- Clean and professional design using shadcn/ui components
+- Smooth animations and transitions
 
 ## Getting Started
 
@@ -58,4 +58,3 @@ The AI assistant helps you generate React components and features through natura
 3. Set up your environment variables:
     - `GEMINI_API_KEY`: Your Google Gemini API key
 4. Start the development server: `npm run dev`
-
