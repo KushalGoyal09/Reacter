@@ -17,6 +17,7 @@ export const ratelimitMiddleware = async () => {
         const { success } = await ratelimit.limit(key);
         return success;
     } catch (error) {
+        console.error('Error in ratelimitMiddleware:', error);
         return false;
     }
 };
