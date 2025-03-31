@@ -184,9 +184,7 @@ export default function Home() {
             startDevServer(webcontainer, terminal, setSrc, setDevserverProcess);
         } catch (error) {
             console.error('Error generating response:', error);
-            setErrorMessage(
-                `Failed to generate AI response: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            setErrorMessage(`${error instanceof Error ? error.message : "Failed to generate AI response"}`);
             setChatLoading(false);
         } finally {
             setLoading(false);
