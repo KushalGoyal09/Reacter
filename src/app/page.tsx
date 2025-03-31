@@ -121,7 +121,14 @@ export default function Home() {
         setInput('');
 
         try {
-            const response = await generateResponse(prompt, files);
+            const responseFromServer = await generateResponse(prompt, files);
+            if (responseFromServer.error) {
+                throw new Error(responseFromServer.error);
+            }
+            const response = responseFromServer.data;
+            if (!response) {
+                throw new Error('No response from the server');
+            }
             const chatResponse = {
                 role: 'assistant' as const,
                 content: response,

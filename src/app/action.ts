@@ -6,7 +6,8 @@ import { ratelimitMiddleware } from '@/server/ratelimit';
 import { Files, AIResponse } from '@/types';
 
 export async function generateResponse(prompt: string, currentFiles: Files[]) {
-    const isValid = await ratelimitMiddleware();
+    try {
+        const isValid = await ratelimitMiddleware();
     if (!isValid) {
         throw new Error('You are rate limited. Please try again after 1 hour');
     }
@@ -23,5 +24,15 @@ export async function generateResponse(prompt: string, currentFiles: Files[]) {
         console.error('Error parsing response:', parsedResponse.error);
         throw new Error('Invalid response format');
     }
-    return parsedResponse.data;
+    return {
+        success: true,
+        data: parsedResponse.data,
+    };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Somthing went wrong',
+        }
+    }
+    
 }
