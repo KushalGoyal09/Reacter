@@ -4,7 +4,7 @@ Reacter AI is a sophisticated web-based development environment that helps you w
 
 ## Live Demo
 
-[Reacter](https://reacter.kushalgoyal.tech/)
+[Reacter](https://www.reacter.codes)
 
 ## Features
 
