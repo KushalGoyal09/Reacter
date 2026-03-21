@@ -38,7 +38,7 @@ export default function Home() {
     const devServerStartedRef = useRef(false);
     const [devServerProcess, setDevserverProcess] = useState<WebContainerProcess | null>(null);
     const [route, setRoute] = useState('/');
-    const ifameRef = useRef<HTMLIFrameElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
         if (showTerminal && !terminal && terminalRef.current && webcontainer) {
@@ -209,8 +209,8 @@ export default function Home() {
     };
 
     const reloadPreview = () => {
-        if (ifameRef.current) {
-            ifameRef.current.src = ifameRef.current.src;
+        if (iframeRef.current) {
+            iframeRef.current.src = iframeRef.current.src;
         }
     };
 
@@ -344,7 +344,7 @@ export default function Home() {
                                 />
                             </div>
                             {src ? (
-                                <iframe ref={ifameRef} src={src + route} className="w-full flex-1" />
+                                <iframe ref={iframeRef} src={src + route} className="w-full flex-1" />
                             ) : (
                                 <div className="h-full flex items-center justify-center">
                                     <div className="text-muted-foreground">No preview available</div>
