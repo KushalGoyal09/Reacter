@@ -35,7 +35,7 @@ export default function Home() {
     const terminalRef = useRef<HTMLDivElement>(null);
     const [terminal, setTerminal] = useState<Terminal | null>(null);
     const [showTerminal, setShowTerminal] = useState(true);
-    const [devServerStarted, setDevServerStarted] = useState(false);
+    const devServerStartedRef = useRef(false);
     const [devServerProcess, setDevserverProcess] = useState<WebContainerProcess | null>(null);
     const [route, setRoute] = useState('/');
     const ifameRef = useRef<HTMLIFrameElement>(null);
@@ -53,7 +53,7 @@ export default function Home() {
 
     useEffect(() => {
         const handleStart = async () => {
-            if (!webcontainer || devServerStarted) return;
+            if (!webcontainer || devServerStartedRef.current) return;
 
             setLoading(true);
             setLoadingMessage('Installing the base project...');
@@ -72,7 +72,7 @@ export default function Home() {
 
                 setLoading(false);
                 setLoadingMessage('');
-                setDevServerStarted(true);
+                devServerStartedRef.current = true;
                 await startDevServer(webcontainer, terminal, setSrc, setDevserverProcess);
             } catch (error) {
                 console.error('Initialization error:', error);
@@ -85,7 +85,7 @@ export default function Home() {
         };
 
         handleStart();
-    }, [webcontainer]);
+    }, [webcontainer, terminal]);
 
     useEffect(() => {
         if (initialFiles.length > 0) {
