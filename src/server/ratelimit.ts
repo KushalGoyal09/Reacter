@@ -8,6 +8,9 @@ const ratelimit = new Ratelimit({
 });
 
 export const ratelimitMiddleware = async () => {
+    if (process.env.NODE_ENV === 'development') {
+        return true;
+    }
     try {
         const key = await getIP();
         console.log(key);
