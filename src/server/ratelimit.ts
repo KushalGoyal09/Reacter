@@ -7,20 +7,23 @@ const ratelimit = new Ratelimit({
     limiter: Ratelimit.slidingWindow(5, '1 h'),
 });
 
-export const ratelimitMiddleware = async () => {
+export const ratelimitMiddleware = async (): Promise<{ allowed: boolean; error?: string }> => {
     if (process.env.NODE_ENV === 'development') {
-        return true;
+        return { allowed: true };
     }
     try {
         const key = await getIP();
         console.log(key);
         if (!key) {
-            return false;
+            return { allowed: false, error: 'Unable to identify your IP address' };
         }
         const { success } = await ratelimit.limit(key);
-        return success;
+        if (!success) {
+            return { allowed: false, error: 'You are rate limited. Please try again after 1 hour' };
+        }
+        return { allowed: true };
     } catch (error) {
         console.error('Error in ratelimitMiddleware:', error);
-        return false;
+        return { allowed: false, error: 'Service temporarily unavailable. Please try again later' };
     }
 };

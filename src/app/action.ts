@@ -7,9 +7,9 @@ import { Files, AIResponse } from '@/types';
 
 export async function generateResponse(prompt: string, currentFiles: Files[]) {
     try {
-        const isValid = await ratelimitMiddleware();
-        if (!isValid) {
-            throw new Error('You are rate limited. Please try again after 1 hour');
+        const { allowed, error: rateLimitError } = await ratelimitMiddleware();
+        if (!allowed) {
+            throw new Error(rateLimitError);
         }
 
         const provider = getProvider();
